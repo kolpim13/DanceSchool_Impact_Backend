@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from .models import Role
 
 from app.modules.people.schemas import AccountCreate, PersonCreate, SchoolProfileCreate
-from app.modules.people.service import attach_account, grant_role, create_person, set_school_profile
+from app.modules.people.service import PHOTO_DIRECTORY, attach_account, grant_role, create_person, set_school_profile
 #=====================================================
 
 ROLES = {
@@ -21,6 +21,7 @@ def seed_roles(db: Session):
         if name not in existing:
             db.add(Role(name=name, description=description))
     db.flush()
+#=====================================================
 
 
 def seed_initial_members(db: Session):
@@ -36,20 +37,39 @@ def seed_initial_members(db: Session):
     # Create admin -> make school account --> create associated account
     admin = PersonCreate(first_name="Grzegosz", last_name="Caban")
     admin = create_person(db, admin)
+    admin.photo_path = '/media/people/Grzegosz.png'
 
     school_profile = SchoolProfileCreate(display_name="Grzgosz Caban",
                                          position="School owner",
-                                         short_bio="Own school",
-                                         full_bio="Have been dancing and teaching since ages",
+                                         short_bio="Have been dancing and teaching since ages.",
+                                         full_bio="This is the mistery",
                                          is_published=True)
     set_school_profile(db, admin, school_profile)
 
-    admin_credentials = AccountCreate(login_email="email@gmail.com", password="password")
+    admin_credentials = AccountCreate(login_email="caban@gmail.com", password="password")
     admin_account = attach_account(db, admin, admin_credentials)
     grant_role(db, admin_account, db.scalar(select(Role).where(Role.name == 'instructor')))
     grant_role(db, admin_account, db.scalar(select(Role).where(Role.name == 'admin')))
 
-    # Debug info
-    identifier = admin_account.id
-    print('Created administrator account:', identifier)
+    print('Created administrator account:', admin_account.id)
+
+    # Create second instructor
+    person = PersonCreate(first_name="Ania", last_name="Napieraj")
+    instructor = create_person(db, person)
+    instructor.photo_path = '/media/people/Anna.png'
+
+    school_profile = SchoolProfileCreate(display_name="Naia Napieraj",
+                                         position="Instructor",
+                                         short_bio="She is really ...",
+                                         full_bio="Who knows",
+                                         is_published=True)
+    set_school_profile(db, instructor, school_profile)
+
+    admin_credentials = AccountCreate(login_email="ania@gmail.com", password="password")
+    instructor_account = attach_account(db, instructor, admin_credentials)
+    grant_role(db, instructor_account, db.scalar(select(Role).where(Role.name == 'instructor')))
+
+    print('Created generic person:', instructor.id)
+
+#=====================================================
     

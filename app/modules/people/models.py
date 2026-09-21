@@ -47,6 +47,16 @@ class Account(Base):
     roles: Mapped[list[Role]] = relationship(secondary=account_roles, back_populates='accounts', lazy='selectin')
 
 
+class LoginSession(Base):
+    __tablename__ = 'login_sessions'
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    account_id: Mapped[UUID] = mapped_column(ForeignKey('accounts.id', ondelete='CASCADE'))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    account: Mapped[Account] = relationship()
+
+
 class SchoolProfile(Base):
     __tablename__ = 'school_profiles'
     # The primary key also guarantees at most one profile for each person.

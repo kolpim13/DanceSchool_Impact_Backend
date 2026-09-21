@@ -1,17 +1,17 @@
 """Create/migrate database, enable WAL and seed predefined roles."""
 import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from alembic import command
 from alembic.config import Config
 from app.db.session import engine, SessionLocal
 from app.modules.people.seed import (
     seed_initial_members, seed_roles
 )
-#========================================================
-
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 #========================================================
 
 def main():

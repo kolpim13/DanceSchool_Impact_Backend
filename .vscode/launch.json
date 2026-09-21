@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Impact Backend",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "main:app",
+        "--host", "127.0.0.1",
+        "--port", "8000"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      
+      "env": {
+        "APP_ENV": "development",
+        "DATABASE_URL": "sqlite:///C:/Maks/projects/ProjectImpact/Backend/data/impact.db" 
+      }
+    }
+  ]
+}

@@ -1,15 +1,27 @@
 import sqlite3
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import OperationalError
 from app.core.config import settings
 
 # Routers
 from app.modules.people.router import router as people_router
+from app.modules.people.service import PHOTO_DIRECTORY
 #=====================================================
 
 def create_app() -> FastAPI:
     application = FastAPI(title=settings.title, version='0.2.0')
+    PHOTO_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.website_origins),
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
+    )
+    application.mount('/media', StaticFiles(directory=PHOTO_DIRECTORY.parent), name='media')
     application.include_router(people_router, prefix='/api')
 
     @application.exception_handler(OperationalError)
