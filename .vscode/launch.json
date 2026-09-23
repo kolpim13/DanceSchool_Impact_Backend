@@ -21,7 +21,8 @@
       
       "env": {
         "APP_ENV": "development",
-        "DATABASE_URL": "sqlite:///C:/Maks/projects/ProjectImpact/Backend/data/impact.db" 
+        "DATABASE_URL": "sqlite:///C:/Maks/projects/ProjectImpact/Backend/data/impact.db",
+        "WEBSITE_ORIGINS": "http://localhost:3000,http://127.0.0.1:3000,https://192.168.0.87,https://10.70.88.21"
       }
     }
   ]

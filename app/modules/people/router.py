@@ -2,10 +2,13 @@ from typing import Annotated
 from uuid import UUID
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from app.core.auth import Db, SESSION_COOKIE, current_account, require_any_role
+from app.core.auth import (
+    Db, SESSION_COOKIE, clear_session_cookie, current_account, require_any_role,
+    set_session_cookie, verify_trusted_origin,
+)
 from app.core.config import settings
 from .models import Account, Person, Role
 from .queries import public_profiles
@@ -16,7 +19,7 @@ from .schemas import (
 from .service import (
     MAX_PHOTO_BYTES, PHOTO_DIRECTORY, PHOTO_TYPES, AuthenticationError,
     ConflictError, attach_account, authenticate_account, create_login_session,
-    find_active_account_by_email,
+    find_active_account_by_email, revoke_session,
 )
 #=====================================================
 
@@ -40,14 +43,7 @@ def login(data: LoginRequest, response: Response, db: Db):
 
     token = create_login_session(db, account)
     db.commit()
-    response.set_cookie(
-        SESSION_COOKIE,
-        token,
-        httponly=True,
-        secure=True,
-        samesite='lax',
-        max_age=settings.session_days * 24 * 60 * 60,
-    )
+    set_session_cookie(response, token)
     return account
 
 
@@ -62,15 +58,28 @@ def development_login(data: DevelopmentLoginRequest, response: Response, db: Db)
 
     token = create_login_session(db, account)
     db.commit()
-    response.set_cookie(
-        SESSION_COOKIE,
-        token,
-        httponly=True,
-        secure=True,
-        samesite='lax',
-        max_age=settings.session_days * 24 * 60 * 60,
-    )
+    set_session_cookie(response, token)
     return account
+
+
+@router.post('/auth/logout',
+             status_code=status.HTTP_204_NO_CONTENT,
+             dependencies=[Depends(verify_trusted_origin)])
+def logout(request: Request, response: Response, db: Db):
+    # No current_account dependency: missing/expired/unknown/already-revoked sessions must still clear idempotently.
+    token = request.cookies.get(SESSION_COOKIE)
+    try:
+        if token:
+            revoke_session(db, token)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, 'Logout failed') from exc
+
+    clear_session_cookie(response)
+    response.status_code = status.HTTP_204_NO_CONTENT
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @router.get('/school-profiles/public', 

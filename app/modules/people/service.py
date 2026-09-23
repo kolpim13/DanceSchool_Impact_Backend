@@ -78,6 +78,20 @@ def create_login_session(db: Session, account: Account) -> str:
     return token
 
 
+def revoke_session(db: Session, token: str) -> None:
+    # Only the session matching this exact token is revoked; other devices/sessions are untouched.
+    token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+    session = db.scalar(
+        select(LoginSession).where(
+            LoginSession.token_hash == token_hash,
+            LoginSession.revoked_at.is_(None),
+        )
+    )
+    if session is not None:
+        session.revoked_at = datetime.now(timezone.utc)
+        db.flush()
+
+
 def set_school_profile(db: Session, person: Person, data: SchoolProfileCreate) -> SchoolProfile:
     profile = person.school_profile
     if profile is None:

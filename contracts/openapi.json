@@ -391,6 +391,20 @@
         ]
       }
     },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logout_api_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/people/me": {
       "get": {
         "operationId": "read_own_person_api_people_me_get",
