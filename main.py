@@ -9,6 +9,8 @@ from app.core.config import settings
 # Routers
 from app.modules.people.router import router as people_router
 from app.modules.people.service import PHOTO_DIRECTORY
+
+from app.modules.social_media.router import router as social_media_router
 #=====================================================
 
 def create_app() -> FastAPI:
@@ -23,6 +25,7 @@ def create_app() -> FastAPI:
     )
     application.mount('/media', StaticFiles(directory=PHOTO_DIRECTORY.parent), name='media')
     application.include_router(people_router, prefix='/api')
+    application.include_router(social_media_router, prefix='/api')
 
     @application.exception_handler(OperationalError)
     async def database_error(request: Request, exc: OperationalError):

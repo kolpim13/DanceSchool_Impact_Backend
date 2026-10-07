@@ -1,4 +1,4 @@
-"""Create/migrate database, enable WAL and seed predefined roles."""
+"""Upgrade the local database schema and seed initial records."""
 import sys
 from pathlib import Path
 
@@ -8,29 +8,34 @@ if str(ROOT) not in sys.path:
 
 from alembic import command
 from alembic.config import Config
+from sqlalchemy import select
+from app.core.config import settings
 from app.db.session import engine, SessionLocal
+from app.modules.people.models import Person
 from app.modules.people.seed import (
     seed_initial_members, seed_roles
 )
-#========================================================
 
 def main():
-    # Raw DBAPI connection: journal mode must be changed outside a transaction.
+    # SQLite requires journal mode to be changed outside a transaction.
     connection = engine.raw_connection()
     try:
         mode = connection.execute('PRAGMA journal_mode=WAL').fetchone()[0]
-        if mode != 'wal':
+        if mode.lower() != 'wal':
             raise RuntimeError('Use a file-backed local SQLite database for WAL')
     finally:
         connection.close()
 
-    command.upgrade(Config(str(ROOT / 'alembic.ini')), 'head')
+    config = Config(str(ROOT / 'alembic.ini'))
+    config.set_main_option('sqlalchemy.url', settings.database_url.replace('%', '%%'))
+    command.upgrade(config, 'head')
+
     with SessionLocal.begin() as db:
         seed_roles(db)
-        seed_initial_members(db)
+        if db.scalar(select(Person.id).limit(1)) is None:
+            seed_initial_members(db)
 
-    print('Database created; WAL enabled; roles seeded; initial members seeded')
-#========================================================
+    print('Database initialized; schema upgraded; WAL enabled; roles seeded')
 
 if __name__ == '__main__':
     main()
