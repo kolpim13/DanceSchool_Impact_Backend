@@ -1,0 +1,13 @@
+# Install: copy both files to /etc/systemd/system/, then
+#   systemctl daemon-reload && systemctl enable --now impact-facebook-sync.timer
+# Inspect: systemctl list-timers impact-facebook-sync.timer
+[Unit]
+Description=Daily Impact Facebook feed synchronization
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+# Run missed executions after downtime.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

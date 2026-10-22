@@ -1,4 +1,6 @@
+import tempfile
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import urlsplit
 from cryptography.fernet import Fernet
 from pydantic import Field, SecretStr, field_validator
@@ -19,7 +21,10 @@ class Settings(BaseSettings):
     max_scan_pages: int = Field(default=20, ge=1, le=100)
     token_check_seconds: int = Field(default=21600, ge=60)
     renew_before_seconds: int = Field(default=604800, ge=60)
-    lock_path: str = "/tmp/impact-facebook-sync.lock"
+    # Feed is flagged stale after this age but still served; hidden entirely after the second.
+    stale_after_seconds: int = Field(default=172800, ge=60)
+    hide_after_seconds: int = Field(default=604800, ge=60)
+    lock_path: str = str(Path(tempfile.gettempdir()) / "impact-facebook-sync.lock")
 
     @field_validator("redirect_uri")
     @classmethod

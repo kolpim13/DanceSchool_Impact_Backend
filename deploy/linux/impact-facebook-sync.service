@@ -1,0 +1,10 @@
+[Unit]
+Description=Impact Facebook feed synchronization
+
+[Service]
+Type=oneshot
+# Adjust User, WorkingDirectory and the Python path to the deployment.
+User=impact
+WorkingDirectory=/opt/impact/backend
+ExecStart=/opt/impact/backend/.venv/bin/python -m app.modules.social_media.sync
+TimeoutStartSec=600

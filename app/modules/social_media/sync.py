@@ -1,3 +1,4 @@
+import logging
 import time
 from filelock import FileLock, Timeout
 from sqlalchemy import delete
@@ -6,6 +7,9 @@ from app.db.session import SessionLocal
 from .facebook import SyncError, fetch_snapshot
 from .models import FacebookPost, FacebookSyncState
 from .tokens import token_for_sync, mark_failure, AUTH_ERRORS
+
+log = logging.getLogger(__name__)
+
 
 def record_error(session_factory, page_id, started, category):
     with session_factory.begin() as db:
@@ -52,6 +56,23 @@ def synchronize(settings, session_factory=SessionLocal, transport=None):
             return len(posts)
     except Timeout:
         raise SyncError("sync_already_running") from None
+
+
+def refresh_facebook_feed(settings=None, session_factory=SessionLocal, transport=None):
+    """Replace stored FacebookPost rows with a fresh snapshot. Never raises.
+
+    Returns the number of stored posts, or None if the refresh failed or was skipped.
+    On failure the previous posts are kept.
+    """
+    try:
+        settings = settings or get_settings()
+        return synchronize(settings, session_factory, transport)
+    except SyncError as exc:
+        log.warning("Facebook feed refresh failed: %s", exc)
+    except Exception:
+        # Avoid logging raw exceptions, which may contain config or URLs.
+        log.warning("Facebook feed refresh failed: configuration_or_database_error")
+    return None
 
 
 def main():
